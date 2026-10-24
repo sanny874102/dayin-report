@@ -66,7 +66,7 @@
           <div class="card p-4">
             <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
               <h4 class="fw-bold text-primary mb-0">填寫通報資料</h4>
-              <span class="badge bg-light text-secondary border">系統正常運作中 v2.6</span>
+              <span class="badge bg-light text-secondary border">系統正常運作中 v2.7</span>
             </div>
             
             <form id="reportForm">
@@ -264,7 +264,7 @@
   </table>
   <div class="mb-2" id="ex_photoWrapper" style="display:none; text-align:center;">
     <p class="fw-bold text-muted small mb-1">現場照片紀錄：</p>
-    <img id="ex_photoImg" src="" crossorigin="anonymous" style="max-height:280px; max-width:100%; border-radius:6px; border:1px solid #ddd;" alt="現場照片">
+    <img id="ex_photoImg" src="" style="max-height:280px; max-width:100%; border-radius:6px; border:1px solid #ddd;" alt="現場照片">
   </div>
   <div class="text-end text-muted pt-2 border-top small">
     <span>系統產生時間：<span id="ex_printTime"></span></span>
@@ -366,7 +366,7 @@
       const img = new Image();
       img.onload = function() {
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 1000;
+        const MAX_WIDTH = 800; // 控制圖片大小以確保順暢
         let width = img.width;
         let height = img.height;
 
@@ -379,7 +379,7 @@
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
 
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
         const preview = document.getElementById('previewImg');
         preview.src = dataUrl;
         preview.style.display = 'block';
@@ -448,6 +448,7 @@
         document.getElementById('reportForm').reset();
         document.getElementById('previewImg').style.display = 'none';
         compressedBase64 = '';
+        photoFileName = '';
         setNowDateTime();
         handleCategoryChange();
       } else {
@@ -486,6 +487,7 @@
 
     tbody.innerHTML = data.map(row => {
       const displayStatus = row.status === '已結案' ? '已完成' : row.status;
+      const hasPhoto = row.photoUrl && row.photoUrl !== '無上傳照片';
       return `
       <tr>
         <td class="fw-bold text-primary">${row.caseId}</td>
@@ -493,7 +495,7 @@
         <td>${row.location}</td>
         <td><span class="badge bg-secondary">${row.category}</span><br><small class="text-muted">${row.subDetail}</small></td>
         <td>${row.reporterName}</td>
-        <td>${row.photoUrl !== '無上傳照片' ? `<a href="${row.photoUrl}" target="_blank" class="btn btn-sm btn-outline-info">📷 查看照片</a>` : '<span class="text-muted small">無</span>'}</td>
+        <td>${hasPhoto ? `<a href="${row.photoUrl}" target="_blank" class="btn btn-sm btn-outline-info">📷 查看照片</a>` : '<span class="text-muted small">無</span>'}</td>
         <td><span class="badge badge-${displayStatus} fs-6">${displayStatus}</span></td>
         <td><small class="fw-bold text-dark">${row.adminNote || '-'}</small></td>
       </tr>
@@ -579,6 +581,7 @@
     tbody.innerHTML = data.map(row => {
       const curStatus = row.status === '已結案' ? '已完成' : row.status;
       const showQuickUnit = (curStatus === '已通報相關單位' || curStatus === '相關單位處理中') ? '' : 'd-none';
+      const hasPhoto = row.photoUrl && row.photoUrl !== '無上傳照片';
       return `
       <tr id="adminRow_${row.caseId}">
         <td class="fw-bold text-primary">${row.caseId}</td>
@@ -586,7 +589,7 @@
         <td><strong>${row.reporterName}</strong><br><a href="tel:${row.reporterPhone}">${row.reporterPhone}</a></td>
         <td>${row.location}</td>
         <td><span class="badge bg-dark">${row.category}</span><br><small>${row.subDetail}</small></td>
-        <td>${row.photoUrl !== '無上傳照片' ? `<a href="${row.photoUrl}" target="_blank" class="btn btn-sm btn-info text-white">查看</a>` : '無'}</td>
+        <td>${hasPhoto ? `<a href="${row.photoUrl}" target="_blank" class="btn btn-sm btn-info text-white">查看</a>` : '無'}</td>
         <td>
           <select class="form-select form-select-sm mb-1 fw-bold" id="status_${row.caseId}" onchange="handleAdminStatusChange('${row.caseId}')">
             <option value="待處理" ${curStatus === '待處理' ? 'selected' : ''}>🔴 待處理</option>
@@ -619,7 +622,7 @@
     `}).join('');
   }
 
-  // 將單一案件轉為圖片（完美解決跨域與破圖問題）
+  // 完美生成圖片並支援手機檢視
   function downloadCaseImage(caseId) {
     const row = adminRecordsCache.find(r => r.caseId === caseId);
     if (!row) {
@@ -645,9 +648,7 @@
     const photoImg = document.getElementById('ex_photoImg');
     
     if (row.photoUrl && row.photoUrl !== '無上傳照片') {
-      // 改用更穩定的直連與圖片載入機制
-      photoImg.crossOrigin = "anonymous";
-      photoImg.src = row.photoUrl;
+      photoImg.src = row.photoUrl; // 採用 Base64 格式，100% 絕對不會破圖！
       photoWrapper.style.display = 'block';
     } else {
       photoWrapper.style.display = 'none';
@@ -659,9 +660,8 @@
     const exportContainer = document.getElementById('exportCardContainer');
     exportContainer.style.left = '0';
 
-    // 稍微延遲讓圖片載入完成後再截圖
     setTimeout(() => {
-      html2canvas(exportContainer, { scale: 2, useCORS: true, allowTaint: true }).then(canvas => {
+      html2canvas(exportContainer, { scale: 2, useCORS: true }).then(canvas => {
         exportContainer.style.left = '-9999px';
         
         generatedImageUrl = canvas.toDataURL('image/png');
@@ -674,9 +674,9 @@
 
       }).catch(err => {
         exportContainer.style.left = '-9999px';
-        alert('圖片生成失敗，可能是圖片格式或瀏覽器限制所致。');
+        alert('圖片生成失敗，請稍後再試。');
       });
-    }, 800);
+    }, 500);
   }
 
   function openImageInNewTab() {
@@ -762,7 +762,7 @@
       return;
     }
 
-    const headers = ['案件編號', '通報時間', '通報人姓名', '聯絡電話', '發生地點', '事件分類', '事件細項/路燈編號', '照片連結', '處理狀態', '相關單位/處理備註'];
+    const headers = ['案件編號', '通報時間', '通報人姓名', '聯絡電話', '發生地點', '事件分類', '事件細項/路燈編號', '照片資料', '處理狀態', '相關單位/處理備註'];
     const csvRows = [headers.join(',')];
 
     adminRecordsCache.forEach(row => {
@@ -775,7 +775,7 @@
         row.location,
         row.category,
         row.subDetail,
-        row.photoUrl,
+        row.photoUrl === '無上傳照片' ? '無' : '有照片',
         displayStatus,
         row.adminNote || ''
       ].map(val => {

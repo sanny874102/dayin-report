@@ -11,9 +11,14 @@
     .card { border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
     .nav-pills .nav-link { color: #495057; font-weight: bold; border-radius: 8px; padding: 10px 20px; margin: 0 5px; }
     .nav-pills .nav-link.active { background-color: #1e5799; color: white; }
-    .badge-待處理 { background-color: #dc3545; }
+    
+    /* 案件狀態標籤顏色 */
+    .badge-待處理 { background-color: #dc3545; color: #fff; }
     .badge-處理中 { background-color: #ffc107; color: #000; }
-    .badge-已結案 { background-color: #198754; }
+    .badge-已通報相關單位 { background-color: #0dcaf0; color: #000; }
+    .badge-相關單位處理中 { background-color: #fd7e14; color: #fff; }
+    .badge-已完成, .badge-已結案 { background-color: #198754; color: #fff; }
+    
     #previewImg { max-height: 200px; border-radius: 8px; display: none; margin-top: 10px; }
     .sub-box { display: none; }
   </style>
@@ -50,7 +55,7 @@
           <div class="card p-4">
             <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
               <h4 class="fw-bold text-primary mb-0">填寫通報資料</h4>
-              <span class="badge bg-light text-secondary border">系統正常運作中 v2.0</span>
+              <span class="badge bg-light text-secondary border">系統正常運作中 v2.1</span>
             </div>
             
             <form id="reportForm">
@@ -161,7 +166,7 @@
                 <th>通報人</th>
                 <th>現場照片</th>
                 <th>處理狀態</th>
-                <th>處理回覆/備註</th>
+                <th>相關單位 / 處理回覆</th>
               </tr>
             </thead>
             <tbody id="publicTableBody">
@@ -202,7 +207,7 @@
                 <th>地點</th>
                 <th>分類與細項</th>
                 <th>照片</th>
-                <th width="280">狀態更新與回覆</th>
+                <th width="320">狀態更新與回覆</th>
               </tr>
             </thead>
             <tbody id="adminTableBody"></tbody>
@@ -403,7 +408,10 @@
       return;
     }
 
-    tbody.innerHTML = data.map(row => `
+    tbody.innerHTML = data.map(row => {
+      // 相容舊資料的「已結案」顯示為「已完成」
+      const displayStatus = row.status === '已結案' ? '已完成' : row.status;
+      return `
       <tr>
         <td class="fw-bold text-primary">${row.caseId}</td>
         <td><small>${row.reportDate}</small></td>
@@ -411,10 +419,10 @@
         <td><span class="badge bg-secondary">${row.category}</span><br><small class="text-muted">${row.subDetail}</small></td>
         <td>${row.reporterName}</td>
         <td>${row.photoUrl !== '無上傳照片' ? `<a href="${row.photoUrl}" target="_blank" class="btn btn-sm btn-outline-info">📷 查看照片</a>` : '<span class="text-muted small">無</span>'}</td>
-        <td><span class="badge badge-${row.status} fs-6">${row.status}</span></td>
-        <td><small>${row.adminNote || '-'}</small></td>
+        <td><span class="badge badge-${displayStatus} fs-6">${displayStatus}</span></td>
+        <td><small class="fw-bold text-dark">${row.adminNote || '-'}</small></td>
       </tr>
-    `).join('');
+    `}).join('');
   }
 
   // 搜尋過濾公開表格
@@ -455,9 +463,46 @@
     }
   }
 
+  // 管理員切換狀態時，動態調整自填欄位的提示詞
+  function handleAdminStatusChange(caseId) {
+    const status = document.getElementById(`status_${caseId}`).value;
+    const noteInput = document.getElementById(`note_${caseId}`);
+    const unitQuickDiv = document.getElementById(`unitQuick_${caseId}`);
+
+    if (status === '已通報相關單位') {
+      noteInput.placeholder = '請自填已通報之單位 (例：三星鄉公所、台電)...';
+      unitQuickDiv.classList.remove('d-none');
+      noteInput.focus();
+    } else if (status === '相關單位處理中') {
+      noteInput.placeholder = '請自填處理中之單位與進度 (例：公所派工維修中)...';
+      unitQuickDiv.classList.remove('d-none');
+      noteInput.focus();
+    } else {
+      noteInput.placeholder = '填寫處理備註或回覆內容...';
+      unitQuickDiv.classList.add('d-none');
+    }
+  }
+
+  // 快速帶入常用單位名稱至自填框
+  function fillUnitName(caseId, unitName) {
+    const status = document.getElementById(`status_${caseId}`).value;
+    const noteInput = document.getElementById(`note_${caseId}`);
+    if (status === '已通報相關單位') {
+      noteInput.value = `已通報：${unitName}`;
+    } else if (status === '相關單位處理中') {
+      noteInput.value = `${unitName}處理中`;
+    } else {
+      noteInput.value = unitName;
+    }
+    noteInput.focus();
+  }
+
   function renderAdminTable(data) {
     const tbody = document.getElementById('adminTableBody');
-    tbody.innerHTML = data.map(row => `
+    tbody.innerHTML = data.map(row => {
+      const curStatus = row.status === '已結案' ? '已完成' : row.status;
+      const showQuickUnit = (curStatus === '已通報相關單位' || curStatus === '相關單位處理中') ? '' : 'd-none';
+      return `
       <tr>
         <td class="fw-bold">${row.caseId}</td>
         <td><small>${row.reportDate}</small></td>
@@ -466,22 +511,45 @@
         <td><span class="badge bg-dark">${row.category}</span><br><small>${row.subDetail}</small></td>
         <td>${row.photoUrl !== '無上傳照片' ? `<a href="${row.photoUrl}" target="_blank" class="btn btn-sm btn-info text-white">查看</a>` : '無'}</td>
         <td>
-          <select class="form-select form-select-sm mb-1" id="status_${row.caseId}">
-            <option value="待處理" ${row.status === '待處理' ? 'selected' : ''}>🔴 待處理</option>
-            <option value="處理中" ${row.status === '處理中' ? 'selected' : ''}>🟡 處理中</option>
-            <option value="已結案" ${row.status === '已結案' ? 'selected' : ''}>🟢 已結案</option>
+          <select class="form-select form-select-sm mb-1 fw-bold" id="status_${row.caseId}" onchange="handleAdminStatusChange('${row.caseId}')">
+            <option value="待處理" ${curStatus === '待處理' ? 'selected' : ''}>🔴 待處理</option>
+            <option value="處理中" ${curStatus === '處理中' ? 'selected' : ''}>🟡 處理中</option>
+            <option value="已通報相關單位" ${curStatus === '已通報相關單位' ? 'selected' : ''}>📢 1. 已通報相關單位 : (自填)</option>
+            <option value="相關單位處理中" ${curStatus === '相關單位處理中' ? 'selected' : ''}>🛠️ 2. 相關單位處理中 : (自填)</option>
+            <option value="已完成" ${curStatus === '已完成' ? 'selected' : ''}>🟢 已完成</option>
           </select>
-          <input type="text" class="form-control form-control-sm mb-1" id="note_${row.caseId}" placeholder="填寫處理備註..." value="${row.adminNote || ''}">
-          <button class="btn btn-sm btn-success w-100" type="button" onclick="updateCaseStatus('${row.caseId}')">儲存更新</button>
+          
+          <input type="text" class="form-control form-control-sm mb-1 border-primary" id="note_${row.caseId}" placeholder="請自填相關單位或處理備註..." value="${row.adminNote || ''}">
+          
+          <!-- 常用單位快速填入輔助按鈕 -->
+          <div class="mb-2 ${showQuickUnit}" id="unitQuick_${row.caseId}">
+            <small class="text-muted d-block mb-1">點選快速帶入（亦可直接於上方打字自填）：</small>
+            <div class="d-flex flex-wrap gap-1">
+              <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-1" style="font-size:12px;" onclick="fillUnitName('${row.caseId}', '鄉公所')">鄉公所</button>
+              <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-1" style="font-size:12px;" onclick="fillUnitName('${row.caseId}', '台電公司')">台電</button>
+              <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-1" style="font-size:12px;" onclick="fillUnitName('${row.caseId}', '清潔隊')">清潔隊</button>
+              <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-1" style="font-size:12px;" onclick="fillUnitName('${row.caseId}', '消防局/農業處')">消防/農業處</button>
+              <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-1" style="font-size:12px;" onclick="fillUnitName('${row.caseId}', '路燈維修廠商')">路燈廠商</button>
+            </div>
+          </div>
+
+          <button class="btn btn-sm btn-success w-100 fw-bold" type="button" onclick="updateCaseStatus('${row.caseId}')">💾 儲存更新</button>
         </td>
       </tr>
-    `).join('');
+    `}).join('');
   }
 
   // 管理員儲存案件狀態
   async function updateCaseStatus(caseId) {
     const newStatus = document.getElementById(`status_${caseId}`).value;
-    const adminNote = document.getElementById(`note_${caseId}`).value;
+    const adminNote = document.getElementById(`note_${caseId}`).value.trim();
+
+    // 若選擇已通報相關單位或相關單位處理中，提醒管理員填寫單位名稱
+    if ((newStatus === '已通報相關單位' || newStatus === '相關單位處理中') && !adminNote) {
+      alert('💡 您選擇了「' + newStatus + '」，請在下方輸入框自填相關單位名稱！');
+      document.getElementById(`note_${caseId}`).focus();
+      return;
+    }
 
     try {
       const res = await fetch(GAS_URL, {
@@ -496,7 +564,7 @@
       });
       const result = await res.json();
       if (result.status === 'success') {
-        alert('✅ 案件【' + caseId + '】狀態已更新為：' + newStatus);
+        alert('✅ 案件【' + caseId + '】狀態已更新為：' + newStatus + (adminNote ? '\n內容：' + adminNote : ''));
       } else {
         alert('更新失敗：' + result.message);
       }

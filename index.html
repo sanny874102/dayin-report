@@ -19,7 +19,7 @@
     .badge-相關單位處理中 { background-color: #fd7e14; color: #fff; }
     .badge-已完成, .badge-已結案 { background-color: #198754; color: #fff; }
     
-    #previewImg { max-height: 200px; border-radius: 8px; display: none; margin-top: 10px; }
+    .preview-thumb { width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; margin-right: 5px; margin-bottom: 5px; }
     .sub-box { display: none; }
 
     /* 隱藏的獨立案件通報卡片模板 (用於截圖下載) */
@@ -67,7 +67,7 @@
           <div class="card p-4">
             <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
               <h4 class="fw-bold text-primary mb-0">填寫通報資料</h4>
-              <span class="badge bg-light text-secondary border">系統正常運作中 v3.2</span>
+              <span class="badge bg-light text-secondary border">系統正常運作中 v3.3 (支援多圖)</span>
             </div>
             
             <form id="reportForm">
@@ -117,9 +117,9 @@
               </div>
 
               <div class="mb-3">
-                <label class="form-label fw-bold">現場照片上傳（選填，系統將自動壓縮加速上傳）</label>
-                <input type="file" class="form-control" id="photoInput" accept="image/*">
-                <img id="previewImg" alt="照片預覽">
+                <label class="form-label fw-bold">現場照片上傳（選填，最多可選 4 張）</label>
+                <input type="file" class="form-control" id="photoInput" accept="image/*" multiple>
+                <div id="previewContainer" class="mt-2 d-flex flex-wrap"></div>
               </div>
 
               <hr>
@@ -261,29 +261,29 @@
   </table>
   <div class="mb-2" id="ex_photoWrapper" style="display:none; text-align:center;">
     <p class="fw-bold text-muted small mb-1">現場照片紀錄：</p>
-    <img id="ex_photoImg" src="" crossorigin="anonymous" style="max-height:280px; max-width:100%; border-radius:6px; border:1px solid #ddd;" alt="現場照片">
+    <div id="ex_photoContainer" class="d-flex flex-wrap justify-content-center gap-2"></div>
   </div>
   <div class="text-end text-muted pt-2 border-top small">
     <span>系統產生時間：<span id="ex_printTime"></span></span>
   </div>
 </div>
 
-<!-- 照片檢視與圖片下載彈出視窗 (Modal) -->
+<!-- 照片預覽與圖片下載彈出視窗 (Modal) -->
 <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content">
       <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title fw-bold" id="modalTitle">📷 案件相片與通報單</h5>
+        <h5 class="modal-title fw-bold" id="modalTitle">📷 現場通報照片檢視</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-content p-3 text-center bg-light">
         <p class="text-danger fw-bold mb-2" id="modalTip">💡 手機用戶請直接「長按圖片」選擇儲存至相簿；電腦用戶可點擊下方按鈕在新分頁開啟！</p>
-        <div style="max-height: 60vh; overflow: auto;" class="border bg-white p-2 rounded">
-          <img id="modalImageResult" class="img-fluid rounded shadow-sm" alt="預覽圖片">
+        <div style="max-height: 60vh; overflow: auto;" class="border bg-white p-2 rounded" id="modalContentArea">
+          <!-- 動態放入照片 -->
         </div>
       </div>
       <div class="modal-footer justify-content-between">
-        <a id="modalDownloadBtn" href="#" target="_blank" class="btn btn-outline-primary fw-bold">🌐 在新分頁開啟大圖</a>
+        <a id="modalDownloadBtn" href="#" target="_blank" class="btn btn-outline-primary fw-bold" style="display:none;">🌐 在新分頁開啟原圖</a>
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉視窗</button>
       </div>
     </div>
@@ -294,8 +294,7 @@
 <script>
   const GAS_URL = 'https://script.google.com/macros/s/AKfycbzRdfrnrNThvltGro3aARUi5oK6dGJMgtZKLOeGLrc6Swx3lNO9y-FT0bqEYOjuIU58Lg/exec';
 
-  let compressedBase64 = '';
-  let photoFileName = '';
+  let compressedPhotos = []; // 儲存最多4張照片的base64
   let currentAdminPwd = '';
   let adminRecordsCache = [];
   let generatedImageUrl = '';
@@ -306,7 +305,7 @@
     document.getElementById('noLightNumBtn').addEventListener('click', function() {
       document.getElementById('lightNumberInput').value = '路燈名牌模糊/無編號';
     });
-    document.getElementById('photoInput').addEventListener('change', previewAndCompressImage);
+    document.getElementById('photoInput').addEventListener('change', handleMultipleImages);
     document.getElementById('reportForm').addEventListener('submit', submitReport);
   });
 
@@ -324,7 +323,7 @@
       if (idA !== idB) {
         return idB.localeCompare(idA);
       }
-      return String(b.reportDate || '').localeCompare(String(a.reportDate || ''));
+      return String(b.reportDate || '').localeCompare(String(b.reportDate || ''));
     });
   }
 
@@ -353,39 +352,56 @@
     }
   }
 
-  function previewAndCompressImage(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    photoFileName = file.name;
+  function handleMultipleImages(event) {
+    const files = event.target.files;
+    if (!files) return;
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const img = new Image();
-      img.onload = function() {
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 800;
-        let width = img.width;
-        let height = img.height;
+    if (files.length > 4) {
+      alert('⚠️ 最多只能選擇 4 張照片！系統將自動選取前 4 張。');
+    }
 
-        if (width > MAX_WIDTH) {
-          height *= MAX_WIDTH / width;
-          width = MAX_WIDTH;
-        }
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
+    compressedPhotos = [];
+    const previewContainer = document.getElementById('previewContainer');
+    previewContainer.innerHTML = '';
 
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
-        const preview = document.getElementById('previewImg');
-        preview.src = dataUrl;
-        preview.style.display = 'block';
+    const limit = Math.min(files.length, 4);
+    for (let i = 0; i < limit; i++) {
+      const file = files[i];
+      const reader = new FileReader();
 
-        compressedBase64 = dataUrl.split(',')[1];
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+          compressedPhotos.push({
+            name: file.name,
+            base64: dataUrl.split(',')[1],
+            mimeType: 'image/jpeg'
+          });
+
+          const thumb = document.createElement('img');
+          thumb.src = dataUrl;
+          thumb.className = 'preview-thumb';
+          previewContainer.appendChild(thumb);
+        };
+        img.src = e.target.result;
       };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
+      reader.readAsDataURL(file);
+    }
   }
 
   async function submitReport(event) {
@@ -428,9 +444,7 @@
       subDetail: subDetail,
       reporterName: document.getElementById('reporterName').value,
       reporterPhone: document.getElementById('reporterPhone').value,
-      photoBase64: compressedBase64,
-      photoName: photoFileName,
-      photoMimeType: 'image/jpeg'
+      photos: compressedPhotos
     };
 
     try {
@@ -443,9 +457,8 @@
       if (result.status === 'success') {
         alert('🎉 通報成功！\n\n您的案件編號為：【 ' + result.caseId + ' 】\n您可隨時至「案件狀態查詢」頁面追蹤處理進度。');
         document.getElementById('reportForm').reset();
-        document.getElementById('previewImg').style.display = 'none';
-        compressedBase64 = '';
-        photoFileName = '';
+        document.getElementById('previewContainer.innerHTML = ""');
+        compressedPhotos = [];
         setNowDateTime();
         handleCategoryChange();
       } else {
@@ -619,12 +632,16 @@
     `}).join('');
   }
 
-  function showPhotoModal(url) {
-    document.getElementById('modalTitle').innerText = '📷 現場通報照片檢視';
-    document.getElementById('modalTip').innerText = '💡 手機用戶請直接「長按圖片」選擇儲存至相簿；電腦用戶可點擊下方按鈕在新分頁開啟！';
-    document.getElementById('modalImageResult').src = url;
-    document.getElementById('modalDownloadBtn').href = url;
-    document.getElementById('modalDownloadBtn').innerText = '🌐 在新分頁開啟原圖';
+  // 彈出多張照片檢視
+  function showPhotoModal(urlsStr) {
+    const urls = urlsStr.split(',');
+    document.getElementById('modalTitle').innerText = '📷 現場通報照片檢視 (' + urls.length + '張)';
+    document.getElementById('modalTip').innerText = '💡 手機用戶請直接長按圖片儲存；下方可點擊在新分頁開啟原圖！';
+    
+    const contentArea = document.getElementById('modalContentArea');
+    contentArea.innerHTML = urls.map(u => `<div class="mb-3"><img src="${u.trim()}" class="img-fluid rounded shadow-sm" style="max-height: 50vh;" alt="現場照片"></div>`).join('');
+    
+    document.getElementById('modalDownloadBtn').style.display = 'none'; // 多張圖時隱藏單一按鈕，改由圖片直接長按
     const imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
     imageModal.show();
   }
@@ -650,10 +667,18 @@
     document.getElementById('ex_adminNote').innerText = row.adminNote || '尚無備註/處理中';
 
     const photoWrapper = document.getElementById('ex_photoWrapper');
-    const photoImg = document.getElementById('ex_photoImg');
-    
+    const photoContainer = document.getElementById('ex_photoContainer');
+    photoContainer.innerHTML = '';
+
     if (row.photoUrl && row.photoUrl !== '無上傳照片') {
-      photoImg.src = row.photoUrl;
+      const urls = row.photoUrl.split(',');
+      urls.forEach(u => {
+        const img = document.createElement('img');
+        img.src = u.trim();
+        img.crossOrigin = 'anonymous';
+        img.style.cssText = 'max-height: 180px; max-width: 48%; border-radius: 6px; border: 1px solid #ddd; object-fit: cover;';
+        photoContainer.appendChild(img);
+      });
       photoWrapper.style.display = 'block';
     } else {
       photoWrapper.style.display = 'none';
@@ -673,9 +698,12 @@
         
         document.getElementById('modalTitle').innerText = '📱 案件通報單圖片已生成 (已隱藏個資)';
         document.getElementById('modalTip').innerText = '💡 手機用戶請「長按圖片」選擇加入相簿；或點擊下方按鈕下載！';
-        document.getElementById('modalImageResult').src = generatedImageUrl;
+        
+        const contentArea = document.getElementById('modalContentArea');
+        contentArea.innerHTML = `<img src="${generatedImageUrl}" class="img-fluid rounded shadow-sm" alt="通報單截圖">`;
 
         const downloadBtn = document.getElementById('modalDownloadBtn');
+        downloadBtn.style.display = 'inline-block';
         downloadBtn.href = generatedImageUrl;
         downloadBtn.download = `大隱村通報單_${row.caseId}.png`;
         downloadBtn.innerText = '📥 下載此張圖片';
@@ -687,7 +715,7 @@
         exportContainer.style.left = '-9999px';
         alert('圖片生成失敗，請稍後再試。');
       });
-    }, 500);
+    }, 800);
   }
 
   async function updateCaseStatus(caseId) {

@@ -66,7 +66,7 @@
           <div class="card p-4">
             <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
               <h4 class="fw-bold text-primary mb-0">填寫通報資料</h4>
-              <span class="badge bg-light text-secondary border">系統正常運作中 v2.7</span>
+              <span class="badge bg-light text-secondary border">系統正常運作中 v2.8</span>
             </div>
             
             <form id="reportForm">
@@ -295,7 +295,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycbxsCc9wNaL6DqfPE02RugYKT-yqDKMEUnmnJkZl6tJnaXH9oCwOOkfLhKKJb4fpkMm6QQ/exec';
+  // 已綁定您的最新 Google Apps Script 網址
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbzRdfrnrNThvltGro3aARUi5oK6dGJMgtZKLOeGLrc6Swx3lNO9y-FT0bqEYOjuIU58Lg/exec';
 
   let compressedBase64 = '';
   let photoFileName = '';
@@ -366,7 +367,7 @@
       const img = new Image();
       img.onload = function() {
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 800; // 控制圖片大小以確保順暢
+        const MAX_WIDTH = 800;
         let width = img.width;
         let height = img.height;
 
@@ -622,7 +623,6 @@
     `}).join('');
   }
 
-  // 完美生成圖片並支援手機檢視
   function downloadCaseImage(caseId) {
     const row = adminRecordsCache.find(r => r.caseId === caseId);
     if (!row) {
@@ -648,7 +648,7 @@
     const photoImg = document.getElementById('ex_photoImg');
     
     if (row.photoUrl && row.photoUrl !== '無上傳照片') {
-      photoImg.src = row.photoUrl; // 採用 Base64 格式，100% 絕對不會破圖！
+      photoImg.src = row.photoUrl;
       photoWrapper.style.display = 'block';
     } else {
       photoWrapper.style.display = 'none';

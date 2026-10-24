@@ -15,6 +15,7 @@
     .badge-處理中 { background-color: #ffc107; color: #000; }
     .badge-已結案 { background-color: #198754; }
     #previewImg { max-height: 200px; border-radius: 8px; display: none; margin-top: 10px; }
+    .sub-box { display: none; }
   </style>
 </head>
 <body>
@@ -47,4 +48,462 @@
       <div class="row justify-content-center">
         <div class="col-lg-8">
           <div class="card p-4">
-            <h4 class="fw-
+            <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+              <h4 class="fw-bold text-primary mb-0">填寫通報資料</h4>
+              <span class="badge bg-light text-secondary border">系統正常運作中 v2.0</span>
+            </div>
+            
+            <form id="reportForm">
+              
+              <!-- 1. 通報日期時間 -->
+              <div class="mb-3">
+                <label class="form-label fw-bold">1. 通報日期與時間 <span class="text-danger">*</span></label>
+                <input type="datetime-local" class="form-control" id="reportDate" required>
+              </div>
+
+              <!-- 2. 地點 -->
+              <div class="mb-3">
+                <label class="form-label fw-bold">2. 發生地點 <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="location" placeholder="請描述鄰近明顯目標建築或門牌號碼（例：大隱國小正門對面、大隱路12號前）" required>
+              </div>
+
+              <!-- 3. 事件分類 -->
+              <div class="mb-3">
+                <label class="form-label fw-bold">3. 事件分類 <span class="text-danger">*</span></label>
+                <select class="form-select" id="category" required>
+                  <option value="" disabled selected>-- 請選擇事件分類 --</option>
+                  <option value="災情通報">(1) 災情通報</option>
+                  <option value="蜂窩摘除">(2) 蜂窩摘除</option>
+                  <option value="環境缺失">(3) 環境缺失</option>
+                  <option value="路燈故障">(4) 路燈故障</option>
+                  <option value="其他">(5) 其他</option>
+                </select>
+              </div>
+
+              <!-- 動態顯示區：(1) 災情通報細項 -->
+              <div class="mb-3 p-3 bg-light rounded border sub-box" id="subDisasterDiv">
+                <label class="form-label fw-bold text-danger">請選擇災情項目（可複選）：</label>
+                <div class="row">
+                  <div class="col-6 col-md-4"><div class="form-check"><input class="form-check-input disaster-chk" type="checkbox" value="路樹倒塌" id="d1"><label class="form-check-label" for="d1">路樹倒塌</label></div></div>
+                  <div class="col-6 col-md-4"><div class="form-check"><input class="form-check-input disaster-chk" type="checkbox" value="停電" id="d2"><label class="form-check-label" for="d2">停電</label></div></div>
+                  <div class="col-6 col-md-4"><div class="form-check"><input class="form-check-input disaster-chk" type="checkbox" value="電線桿倒塌" id="d3"><label class="form-check-label" for="d3">電線桿倒塌</label></div></div>
+                  <div class="col-6 col-md-4"><div class="form-check"><input class="form-check-input disaster-chk" type="checkbox" value="土石坍方" id="d4"><label class="form-check-label" for="d4">土石坍方</label></div></div>
+                  <div class="col-6 col-md-4"><div class="form-check"><input class="form-check-input disaster-chk" type="checkbox" value="淹水" id="d5"><label class="form-check-label" for="d5">淹水</label></div></div>
+                  <div class="col-6 col-md-4"><div class="form-check"><input class="form-check-input disaster-chk" type="checkbox" value="懸掛物墜落" id="d6"><label class="form-check-label" for="d6">懸掛物墜落</label></div></div>
+                </div>
+              </div>
+
+              <!-- 動態顯示區：(4) 路燈故障編號 -->
+              <div class="mb-3 p-3 bg-light rounded border border-primary sub-box" id="subLightDiv">
+                <label class="form-label fw-bold text-primary">請提供路燈桿上之路燈編號 <span class="text-danger">*</span>：</label>
+                <input type="text" class="form-control mb-2" id="lightNumberInput" placeholder="請提供路燈桿上之路燈編號">
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="noLightNumBtn">👉 若無編號，點此自動填入「路燈名牌模糊/無編號」</button>
+              </div>
+
+              <!-- 動態顯示區：(2)(3)(5) 補充說明或自填 -->
+              <div class="mb-3 p-3 bg-light rounded border sub-box" id="subOtherDiv">
+                <label class="form-label fw-bold" id="subOtherLabel">補充說明：</label>
+                <input type="text" class="form-control" id="otherInput" placeholder="請填寫詳細情況">
+              </div>
+
+              <!-- 上傳相片 -->
+              <div class="mb-3">
+                <label class="form-label fw-bold">現場照片上傳（選填，系統將自動壓縮加速上傳）</label>
+                <input type="file" class="form-control" id="photoInput" accept="image/*">
+                <img id="previewImg" alt="照片預覽">
+              </div>
+
+              <hr>
+
+              <!-- 4. 通報人資訊 -->
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label fw-bold">4. 通報人姓名 <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" id="reporterName" placeholder="請輸入真實姓名" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label fw-bold">聯絡電話 <span class="text-danger">*</span></label>
+                  <input type="tel" class="form-control" id="reporterPhone" placeholder="例：0912345678" required>
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary w-100 py-2 fw-bold fs-5" id="submitBtn">🚀 送出通報案件</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 2. 案件狀態查詢 ==================== -->
+    <div class="tab-pane fade" id="queryPane">
+      <div class="card p-4">
+        <div class="row align-items-center mb-3">
+          <div class="col-md-6">
+            <h4 class="fw-bold text-primary mb-0">案件後續處理狀態</h4>
+            <small class="text-muted">為保護村民隱私，公開查詢頁面已隱藏聯絡電話與部分姓名</small>
+          </div>
+          <div class="col-md-6 mt-2 mt-md-0">
+            <div class="input-group">
+              <input type="text" class="form-control" id="searchInput" placeholder="輸入案件編號(如 DY2026...)、地點或分類搜尋..." onkeyup="filterPublicTable()">
+              <button class="btn btn-outline-primary" type="button" onclick="loadPublicRecords()">🔄 重新整理</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>案件編號</th>
+                <th>通報時間</th>
+                <th>地點</th>
+                <th>事件分類與細項</th>
+                <th>通報人</th>
+                <th>現場照片</th>
+                <th>處理狀態</th>
+                <th>處理回覆/備註</th>
+              </tr>
+            </thead>
+            <tbody id="publicTableBody">
+              <tr><td colspan="8" class="text-center py-4">載入資料中...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 3. 管理員後台 ==================== -->
+    <div class="tab-pane fade" id="adminPane">
+      <!-- 登入區塊 -->
+      <div class="row justify-content-center" id="adminLoginBox">
+        <div class="col-md-5">
+          <div class="card p-4 text-center">
+            <h4 class="fw-bold mb-3">🔒 管理員登入</h4>
+            <p class="text-muted small">請輸入大隱村管理員專屬密碼以進行案件審核與狀態更新</p>
+            <input type="password" class="form-control mb-3 text-center fs-5" id="adminPwdInput" placeholder="請輸入密碼">
+            <button class="btn btn-dark w-100 fw-bold" type="button" onclick="adminLogin()">登入後台</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 管理後台列表 (登入後顯示) -->
+      <div class="card p-4 d-none" id="adminDashboard">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h4 class="fw-bold text-dark mb-0">🛠️ 案件管理後台（含完整聯絡資訊）</h4>
+          <button class="btn btn-sm btn-outline-secondary" type="button" onclick="adminLogin()">🔄 重新載入</button>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-bordered align-middle">
+            <thead class="table-dark">
+              <tr>
+                <th>案件編號</th>
+                <th>通報時間</th>
+                <th>通報人 / 電話</th>
+                <th>地點</th>
+                <th>分類與細項</th>
+                <th>照片</th>
+                <th width="280">狀態更新與回覆</th>
+              </tr>
+            </thead>
+            <tbody id="adminTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbxsCc9wNaL6DqfPE02RugYKT-yqDKMEUnmnJkZl6tJnaXH9oCwOOkfLhKKJb4fpkMm6QQ/exec';
+
+  let compressedBase64 = '';
+  let photoFileName = '';
+  let currentAdminPwd = '';
+
+  // 當網頁載入完成時立刻綁定所有事件
+  document.addEventListener('DOMContentLoaded', function() {
+    setNowDateTime();
+
+    // 綁定分類選單切換事件
+    const categorySelect = document.getElementById('category');
+    categorySelect.addEventListener('change', handleCategoryChange);
+
+    // 綁定無路燈編號快速填入按鈕
+    document.getElementById('noLightNumBtn').addEventListener('click', function() {
+      document.getElementById('lightNumberInput').value = '路燈名牌模糊/無編號';
+    });
+
+    // 綁定照片上傳與表單送出
+    document.getElementById('photoInput').addEventListener('change', previewAndCompressImage);
+    document.getElementById('reportForm').addEventListener('submit', submitReport);
+  });
+
+  function setNowDateTime() {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    document.getElementById('reportDate').value = now.toISOString().slice(0, 16);
+  }
+
+  // 動態切換事件分類子選項
+  function handleCategoryChange() {
+    const cat = document.getElementById('category').value;
+    const disasterDiv = document.getElementById('subDisasterDiv');
+    const lightDiv = document.getElementById('subLightDiv');
+    const otherDiv = document.getElementById('subOtherDiv');
+
+    // 先全部隱藏
+    disasterDiv.style.display = 'none';
+    lightDiv.style.display = 'none';
+    otherDiv.style.display = 'none';
+
+    if (cat === '災情通報') {
+      disasterDiv.style.display = 'block';
+    } else if (cat === '路燈故障') {
+      lightDiv.style.display = 'block';
+      document.getElementById('lightNumberInput').value = '';
+      document.getElementById('lightNumberInput').focus();
+    } else if (cat === '其他') {
+      otherDiv.style.display = 'block';
+      document.getElementById('subOtherLabel').innerText = '請填寫其他事件說明（必填）：';
+    } else if (cat === '蜂窩摘除' || cat === '環境缺失') {
+      otherDiv.style.display = 'block';
+      document.getElementById('subOtherLabel').innerText = '補充說明（選填，如蜂窩位置、環境缺失細節）：';
+    }
+  }
+
+  // 前端自動壓縮照片並轉為 Base64
+  function previewAndCompressImage(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    photoFileName = file.name;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = new Image();
+      img.onload = function() {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 1000;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > MAX_WIDTH) {
+          height *= MAX_WIDTH / width;
+          width = MAX_WIDTH;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+        const preview = document.getElementById('previewImg');
+        preview.src = dataUrl;
+        preview.style.display = 'block';
+
+        compressedBase64 = dataUrl.split(',')[1];
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // 送出通報表單
+  async function submitReport(event) {
+    event.preventDefault();
+    const cat = document.getElementById('category').value;
+    let subDetail = '';
+
+    if (cat === '災情通報') {
+      const checked = Array.from(document.querySelectorAll('.disaster-chk:checked')).map(cb => cb.value);
+      if (checked.length === 0) {
+        alert('請至少勾選一項災情通報細項！');
+        return;
+      }
+      subDetail = checked.join('、');
+    } else if (cat === '路燈故障') {
+      subDetail = document.getElementById('lightNumberInput').value.trim();
+      if (!subDetail) {
+        alert('請提供路燈桿上之路燈編號！');
+        return;
+      }
+    } else if (cat === '其他') {
+      subDetail = document.getElementById('otherInput').value.trim();
+      if (!subDetail) {
+        alert('選擇「其他」時，請填寫事件說明！');
+        return;
+      }
+    } else {
+      subDetail = document.getElementById('otherInput').value.trim() || '無補充說明';
+    }
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.innerText = '⏳ 資料與照片上傳中，請稍候...';
+
+    const payload = {
+      action: 'submit',
+      reportDate: document.getElementById('reportDate').value.replace('T', ' '),
+      location: document.getElementById('location').value,
+      category: cat,
+      subDetail: subDetail,
+      reporterName: document.getElementById('reporterName').value,
+      reporterPhone: document.getElementById('reporterPhone').value,
+      photoBase64: compressedBase64,
+      photoName: photoFileName,
+      photoMimeType: 'image/jpeg'
+    };
+
+    try {
+      const res = await fetch(GAS_URL, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      const result = await res.json();
+
+      if (result.status === 'success') {
+        alert('🎉 通報成功！\n\n您的案件編號為：【 ' + result.caseId + ' 】\n您可隨時至「案件狀態查詢」頁面追蹤處理進度。');
+        document.getElementById('reportForm').reset();
+        document.getElementById('previewImg').style.display = 'none';
+        compressedBase64 = '';
+        setNowDateTime();
+        handleCategoryChange();
+      } else {
+        alert('上傳失敗：' + result.message);
+      }
+    } catch (error) {
+      alert('網路連線異常，請確認 GAS 網址權限是否設為「所有人」！');
+    } finally {
+      btn.disabled = false;
+      btn.innerText = '🚀 送出通報案件';
+    }
+  }
+
+  // 載入公開查詢列表
+  async function loadPublicRecords() {
+    const tbody = document.getElementById('publicTableBody');
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4">🔄 資料讀取中...</td></tr>';
+
+    try {
+      const res = await fetch(GAS_URL);
+      const result = await res.json();
+      if (result.status === 'success') {
+        renderPublicTable(result.data);
+      }
+    } catch (err) {
+      tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger py-4">無法載入資料，請檢查後端連線。</td></tr>';
+    }
+  }
+
+  function renderPublicTable(data) {
+    const tbody = document.getElementById('publicTableBody');
+    if (data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4">目前尚無任何通報案件</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = data.map(row => `
+      <tr>
+        <td class="fw-bold text-primary">${row.caseId}</td>
+        <td><small>${row.reportDate}</small></td>
+        <td>${row.location}</td>
+        <td><span class="badge bg-secondary">${row.category}</span><br><small class="text-muted">${row.subDetail}</small></td>
+        <td>${row.reporterName}</td>
+        <td>${row.photoUrl !== '無上傳照片' ? `<a href="${row.photoUrl}" target="_blank" class="btn btn-sm btn-outline-info">📷 查看照片</a>` : '<span class="text-muted small">無</span>'}</td>
+        <td><span class="badge badge-${row.status} fs-6">${row.status}</span></td>
+        <td><small>${row.adminNote || '-'}</small></td>
+      </tr>
+    `).join('');
+  }
+
+  // 搜尋過濾公開表格
+  function filterPublicTable() {
+    const keyword = document.getElementById('searchInput').value.toLowerCase();
+    const rows = document.querySelectorAll('#publicTableBody tr');
+    rows.forEach(row => {
+      const text = row.innerText.toLowerCase();
+      row.style.display = text.includes(keyword) ? '' : 'none';
+    });
+  }
+
+  // 管理員登入驗證 (預設密碼 4321)
+  async function adminLogin() {
+    const pwd = document.getElementById('adminPwdInput').value || currentAdminPwd;
+    if (pwd !== '4321') {
+      alert('❌ 密碼錯誤！請輸入正確的管理員密碼。');
+      return;
+    }
+    currentAdminPwd = pwd;
+
+    try {
+      const res = await fetch(GAS_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'adminLogin', password: pwd })
+      });
+      const result = await res.json();
+
+      if (result.status === 'success') {
+        document.getElementById('adminLoginBox').classList.add('d-none');
+        document.getElementById('adminDashboard').classList.remove('d-none');
+        renderAdminTable(result.data);
+      } else {
+        alert(result.message);
+      }
+    } catch (err) {
+      alert('登入連線失敗');
+    }
+  }
+
+  function renderAdminTable(data) {
+    const tbody = document.getElementById('adminTableBody');
+    tbody.innerHTML = data.map(row => `
+      <tr>
+        <td class="fw-bold">${row.caseId}</td>
+        <td><small>${row.reportDate}</small></td>
+        <td><strong>${row.reporterName}</strong><br><a href="tel:${row.reporterPhone}">${row.reporterPhone}</a></td>
+        <td>${row.location}</td>
+        <td><span class="badge bg-dark">${row.category}</span><br><small>${row.subDetail}</small></td>
+        <td>${row.photoUrl !== '無上傳照片' ? `<a href="${row.photoUrl}" target="_blank" class="btn btn-sm btn-info text-white">查看</a>` : '無'}</td>
+        <td>
+          <select class="form-select form-select-sm mb-1" id="status_${row.caseId}">
+            <option value="待處理" ${row.status === '待處理' ? 'selected' : ''}>🔴 待處理</option>
+            <option value="處理中" ${row.status === '處理中' ? 'selected' : ''}>🟡 處理中</option>
+            <option value="已結案" ${row.status === '已結案' ? 'selected' : ''}>🟢 已結案</option>
+          </select>
+          <input type="text" class="form-control form-control-sm mb-1" id="note_${row.caseId}" placeholder="填寫處理備註..." value="${row.adminNote || ''}">
+          <button class="btn btn-sm btn-success w-100" type="button" onclick="updateCaseStatus('${row.caseId}')">儲存更新</button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  // 管理員儲存案件狀態
+  async function updateCaseStatus(caseId) {
+    const newStatus = document.getElementById(`status_${caseId}`).value;
+    const adminNote = document.getElementById(`note_${caseId}`).value;
+
+    try {
+      const res = await fetch(GAS_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'updateStatus',
+          password: currentAdminPwd,
+          caseId: caseId,
+          newStatus: newStatus,
+          adminNote: adminNote
+        })
+      });
+      const result = await res.json();
+      if (result.status === 'success') {
+        alert('✅ 案件【' + caseId + '】狀態已更新為：' + newStatus);
+      } else {
+        alert('更新失敗：' + result.message);
+      }
+    } catch (err) {
+      alert('連線失敗');
+    }
+  }
+</script>
+</body>
+</html>

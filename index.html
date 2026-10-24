@@ -66,7 +66,7 @@
           <div class="card p-4">
             <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
               <h4 class="fw-bold text-primary mb-0">填寫通報資料</h4>
-              <span class="badge bg-light text-secondary border">系統正常運作中 v2.4</span>
+              <span class="badge bg-light text-secondary border">系統正常運作中 v2.5</span>
             </div>
             
             <form id="reportForm">
@@ -271,7 +271,7 @@
   </div>
 </div>
 
-<!-- 手機截圖檢視與下載互動視窗 (Modal) -->
+<!-- 手機與電腦通用的圖片檢視視窗 (Modal) -->
 <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content">
@@ -280,13 +280,13 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-content p-3 text-center bg-light">
-        <p class="text-danger fw-bold mb-2">💡 手機用戶請直接「長按圖片」選擇儲存至相簿；電腦用戶可點擊下方按鈕下載！</p>
+        <p class="text-danger fw-bold mb-2">💡 手機用戶請直接「長按圖片」選擇「加入相簿」或「儲存影像」即可！</p>
         <div style="max-height: 60vh; overflow: auto;" class="border bg-white p-2 rounded">
           <img id="modalImageResult" class="img-fluid rounded shadow-sm" alt="通報單截圖">
         </div>
       </div>
       <div class="modal-footer justify-content-between">
-        <a id="modalDownloadBtn" class="btn btn-success fw-bold px-4" download="通報單.png">📥 點此直接下載圖片</a>
+        <button type="button" class="btn btn-outline-primary fw-bold" onclick="openImageInNewTab()">🌐 在新分頁開啟大圖</button>
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉視窗</button>
       </div>
     </div>
@@ -301,6 +301,7 @@
   let photoFileName = '';
   let currentAdminPwd = '';
   let adminRecordsCache = [];
+  let generatedImageUrl = '';
 
   document.addEventListener('DOMContentLoaded', function() {
     setNowDateTime();
@@ -618,7 +619,7 @@
     `}).join('');
   }
 
-  // 將單一案件轉為圖片並支援手機預覽儲存
+  // 將單一案件轉為圖片並支援圖片完整顯示與手機彈窗檢視
   function downloadCaseImage(caseId) {
     const row = adminRecordsCache.find(r => r.caseId === caseId);
     if (!row) {
@@ -656,22 +657,15 @@
     const exportContainer = document.getElementById('exportCardContainer');
     exportContainer.style.left = '0';
 
-    // 延遲確保圖片載入後再截圖
     setTimeout(() => {
       html2canvas(exportContainer, { scale: 2, useCORS: true, allowTaint: true }).then(canvas => {
         exportContainer.style.left = '-9999px';
         
-        const imageUrl = canvas.toDataURL('image/png');
+        generatedImageUrl = canvas.toDataURL('image/png');
         
-        // 綁定彈出視窗內的下載按鈕與圖片
         const modalImg = document.getElementById('modalImageResult');
-        modalImg.src = imageUrl;
+        modalImg.src = generatedImageUrl;
 
-        const downloadBtn = document.getElementById('modalDownloadBtn');
-        downloadBtn.href = imageUrl;
-        downloadBtn.download = `大隱村通報單_${row.caseId}.png`;
-
-        // 顯示引導視窗（特別針對手機端長按圖片儲存）
         const imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
         imageModal.show();
 
@@ -680,6 +674,22 @@
         alert('圖片生成失敗，請稍後再試。');
       });
     }, 600);
+  }
+
+  // 在新分頁開啟圖片，解決手機無法直接下載的問題
+  function openImageInNewTab() {
+    if (generatedImageUrl) {
+      const newTab = window.open();
+      newTab.document.write(`
+        <html>
+          <head><title>大隱村通報單圖片</title></head>
+          <body style="margin:0; background:#333; text-align:center;">
+            <p style="color:white; font-family:sans-serif; padding:10px; margin:0;">💡 請直接「長按圖片」選擇「加入相簿」或「儲存影像」即可！</p>
+            <img src="${generatedImageUrl}" style="max-width:100%; height:auto;" alt="通報單">
+          </body>
+        </html>
+      `);
+    }
   }
 
   async function updateCaseStatus(caseId) {

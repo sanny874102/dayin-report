@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>大隱村線上通報與查詢系統</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- 引入 html2canvas 用於將指定區塊轉成圖片 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
     body { background-color: #f4f7f6; font-family: 'Microsoft JhengHei', sans-serif; }
@@ -14,7 +13,6 @@
     .nav-pills .nav-link { color: #495057; font-weight: bold; border-radius: 8px; padding: 10px 20px; margin: 0 5px; }
     .nav-pills .nav-link.active { background-color: #1e5799; color: white; }
     
-    /* 案件狀態標籤顏色 */
     .badge-待處理 { background-color: #dc3545; color: #fff; }
     .badge-處理中 { background-color: #ffc107; color: #000; }
     .badge-已通報相關單位 { background-color: #0dcaf0; color: #000; }
@@ -24,7 +22,6 @@
     #previewImg { max-height: 200px; border-radius: 8px; display: none; margin-top: 10px; }
     .sub-box { display: none; }
 
-    /* 隱藏的獨立案件通報卡片樣式（專門用來生成高畫質截圖） */
     #exportCardContainer {
       position: absolute;
       left: -9999px;
@@ -49,7 +46,6 @@
 </div>
 
 <div class="container pb-5">
-  <!-- 導覽切換按鈕 -->
   <ul class="nav nav-pills justify-content-center mb-4" id="systemTabs" role="tablist">
     <li class="nav-item" role="presentation">
       <button class="nav-link active" id="report-tab" data-bs-toggle="pill" data-bs-target="#reportPane" type="button">📝 我要通報</button>
@@ -63,32 +59,27 @@
   </ul>
 
   <div class="tab-content">
-    
-    <!-- ==================== 1. 村民通報表單 ==================== -->
+    <!-- 1. 村民通報表單 -->
     <div class="tab-pane fade show active" id="reportPane">
       <div class="row justify-content-center">
         <div class="col-lg-8">
           <div class="card p-4">
             <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
               <h4 class="fw-bold text-primary mb-0">填寫通報資料</h4>
-              <span class="badge bg-light text-secondary border">系統正常運作中 v2.3</span>
+              <span class="badge bg-light text-secondary border">系統正常運作中 v2.4</span>
             </div>
             
             <form id="reportForm">
-              
-              <!-- 1. 通報日期時間 -->
               <div class="mb-3">
                 <label class="form-label fw-bold">1. 通報日期與時間 <span class="text-danger">*</span></label>
                 <input type="datetime-local" class="form-control" id="reportDate" required>
               </div>
 
-              <!-- 2. 地點 -->
               <div class="mb-3">
                 <label class="form-label fw-bold">2. 發生地點 <span class="text-danger">*</span></label>
                 <input type="text" class="form-control" id="location" placeholder="請描述鄰近明顯目標建築或門牌號碼（例：大隱國小正門對面、大隱路12號前）" required>
               </div>
 
-              <!-- 3. 事件分類 -->
               <div class="mb-3">
                 <label class="form-label fw-bold">3. 事件分類 <span class="text-danger">*</span></label>
                 <select class="form-select" id="category" required>
@@ -101,7 +92,6 @@
                 </select>
               </div>
 
-              <!-- 動態顯示區：(1) 災情通報細項 -->
               <div class="mb-3 p-3 bg-light rounded border sub-box" id="subDisasterDiv">
                 <label class="form-label fw-bold text-danger">請選擇災情項目（可複選）：</label>
                 <div class="row">
@@ -114,20 +104,17 @@
                 </div>
               </div>
 
-              <!-- 動態顯示區：(4) 路燈故障編號 -->
               <div class="mb-3 p-3 bg-light rounded border border-primary sub-box" id="subLightDiv">
                 <label class="form-label fw-bold text-primary">請提供路燈桿上之路燈編號 <span class="text-danger">*</span>：</label>
                 <input type="text" class="form-control mb-2" id="lightNumberInput" placeholder="請提供路燈桿上之路燈編號">
                 <button type="button" class="btn btn-sm btn-outline-secondary" id="noLightNumBtn">👉 若無編號，點此自動填入「路燈名牌模糊/無編號」</button>
               </div>
 
-              <!-- 動態顯示區：(2)(3)(5) 補充說明或自填 -->
               <div class="mb-3 p-3 bg-light rounded border sub-box" id="subOtherDiv">
                 <label class="form-label fw-bold" id="subOtherLabel">補充說明：</label>
                 <input type="text" class="form-control" id="otherInput" placeholder="請填寫詳細情況">
               </div>
 
-              <!-- 上傳相片 -->
               <div class="mb-3">
                 <label class="form-label fw-bold">現場照片上傳（選填，系統將自動壓縮加速上傳）</label>
                 <input type="file" class="form-control" id="photoInput" accept="image/*">
@@ -136,7 +123,6 @@
 
               <hr>
 
-              <!-- 4. 通報人資訊 -->
               <div class="row">
                 <div class="col-md-6 mb-3">
                   <label class="form-label fw-bold">4. 通報人姓名 <span class="text-danger">*</span></label>
@@ -155,7 +141,7 @@
       </div>
     </div>
 
-    <!-- ==================== 2. 案件狀態查詢 ==================== -->
+    <!-- 2. 案件狀態查詢 -->
     <div class="tab-pane fade" id="queryPane">
       <div class="card p-4">
         <div class="row align-items-center mb-3">
@@ -193,9 +179,8 @@
       </div>
     </div>
 
-    <!-- ==================== 3. 管理員後台 ==================== -->
+    <!-- 3. 管理員後台 -->
     <div class="tab-pane fade" id="adminPane">
-      <!-- 登入區塊 -->
       <div class="row justify-content-center" id="adminLoginBox">
         <div class="col-md-5">
           <div class="card p-4 text-center">
@@ -207,7 +192,6 @@
         </div>
       </div>
 
-      <!-- 管理後台列表 (登入後顯示) -->
       <div class="card p-4 d-none" id="adminDashboard">
         <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
           <div>
@@ -237,11 +221,10 @@
         </div>
       </div>
     </div>
-
   </div>
 </div>
 
-<!-- 隱藏的獨立案件通報卡片模板（用於生成圖片下載） -->
+<!-- 隱藏的獨立案件通報卡片模板 -->
 <div id="exportCardContainer">
   <div class="text-center border-bottom pb-3 mb-3">
     <h3 class="fw-bold text-primary mb-1">🏞️ 大隱村災情與事件通報單</h3>
@@ -285,6 +268,28 @@
   </div>
   <div class="text-end text-muted pt-2 border-top small">
     <span>系統產生時間：<span id="ex_printTime"></span></span>
+  </div>
+</div>
+
+<!-- 手機截圖檢視與下載互動視窗 (Modal) -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title fw-bold">📱 案件通報單圖片已生成</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-content p-3 text-center bg-light">
+        <p class="text-danger fw-bold mb-2">💡 手機用戶請直接「長按圖片」選擇儲存至相簿；電腦用戶可點擊下方按鈕下載！</p>
+        <div style="max-height: 60vh; overflow: auto;" class="border bg-white p-2 rounded">
+          <img id="modalImageResult" class="img-fluid rounded shadow-sm" alt="通報單截圖">
+        </div>
+      </div>
+      <div class="modal-footer justify-content-between">
+        <a id="modalDownloadBtn" class="btn btn-success fw-bold px-4" download="通報單.png">📥 點此直接下載圖片</a>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉視窗</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -613,7 +618,7 @@
     `}).join('');
   }
 
-  // 將單一案件轉為圖片下載
+  // 將單一案件轉為圖片並支援手機預覽儲存
   function downloadCaseImage(caseId) {
     const row = adminRecordsCache.find(r => r.caseId === caseId);
     if (!row) {
@@ -621,7 +626,6 @@
       return;
     }
 
-    // 填充隱藏卡片模板的資料
     document.getElementById('ex_caseId').innerText = row.caseId;
     document.getElementById('ex_reportDate').innerText = row.reportDate;
     document.getElementById('ex_location').innerText = row.location;
@@ -636,36 +640,46 @@
 
     document.getElementById('ex_adminNote').innerText = row.adminNote || '尚無備註/處理中';
 
-    // 處理照片顯示
     const photoWrapper = document.getElementById('ex_photoWrapper');
     const photoImg = document.getElementById('ex_photoImg');
     if (row.photoUrl && row.photoUrl !== '無上傳照片') {
-      photoImg.src = row.photoUrl;
+      // 透過代理伺服器繞過 Google Drive 跨域限制以正常顯示照片
+      photoImg.src = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(row.photoUrl);
       photoWrapper.style.display = 'block';
     } else {
       photoWrapper.style.display = 'none';
     }
 
-    // 產生系統時間
     const now = new Date();
     document.getElementById('ex_printTime').innerText = now.toLocaleString('zh-TW');
 
-    // 提示管理員處理中
     const exportContainer = document.getElementById('exportCardContainer');
-    exportContainer.style.left = '0'; // 暫時移至可視範圍內以供截圖
+    exportContainer.style.left = '0';
 
-    // 使用 html2canvas 截圖並下載
-    html2canvas(exportContainer, { scale: 2, useCORS: true }).then(canvas => {
-      exportContainer.style.left = '-9999px'; // 截圖後立刻移回隱藏區
-      
-      const link = document.createElement('a');
-      link.download = `大隱村通報單_${row.caseId}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-    }).catch(err => {
-      exportContainer.style.left = '-9999px';
-      alert('圖片下載產生失敗，若照片有跨域限制可能無法寫入圖片。');
-    });
+    // 延遲確保圖片載入後再截圖
+    setTimeout(() => {
+      html2canvas(exportContainer, { scale: 2, useCORS: true, allowTaint: true }).then(canvas => {
+        exportContainer.style.left = '-9999px';
+        
+        const imageUrl = canvas.toDataURL('image/png');
+        
+        // 綁定彈出視窗內的下載按鈕與圖片
+        const modalImg = document.getElementById('modalImageResult');
+        modalImg.src = imageUrl;
+
+        const downloadBtn = document.getElementById('modalDownloadBtn');
+        downloadBtn.href = imageUrl;
+        downloadBtn.download = `大隱村通報單_${row.caseId}.png`;
+
+        // 顯示引導視窗（特別針對手機端長按圖片儲存）
+        const imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
+        imageModal.show();
+
+      }).catch(err => {
+        exportContainer.style.left = '-9999px';
+        alert('圖片生成失敗，請稍後再試。');
+      });
+    }, 600);
   }
 
   async function updateCaseStatus(caseId) {

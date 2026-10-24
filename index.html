@@ -52,7 +52,7 @@
           <div class="card p-4">
             <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
               <h4 class="fw-bold text-primary mb-0">填寫通報資料</h4>
-              <span class="badge bg-light text-secondary border">系統正常運作中 v2.9</span>
+              <span class="badge bg-light text-secondary border">系統正常運作中 v3.0</span>
             </div>
             
             <form id="reportForm">
@@ -205,6 +205,25 @@
             <tbody id="adminTableBody"></tbody>
           </table>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 圖片預覽彈出視窗 (Modal) -->
+<div class="modal fade" id="photoModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title fw-bold">📷 現場通報照片檢視</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center bg-light p-3">
+        <img id="modalPhotoElement" class="img-fluid rounded shadow-sm" style="max-height: 70vh;" alt="現場照片">
+      </div>
+      <div class="modal-footer justify-content-between">
+        <a id="modalPhotoDownloadBtn" href="#" target="_blank" class="btn btn-outline-primary fw-bold">🌐 在新分頁開啟原圖</a>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉視窗</button>
       </div>
     </div>
   </div>
@@ -411,7 +430,7 @@
         <td>${row.location}</td>
         <td><span class="badge bg-secondary">${row.category}</span><br><small class="text-muted">${row.subDetail}</small></td>
         <td>${row.reporterName}</td>
-        <td>${hasPhoto ? `<a href="${row.photoUrl}" target="_blank" class="btn btn-sm btn-outline-info">📷 查看照片</a>` : '<span class="text-muted small">無</span>'}</td>
+        <td>${hasPhoto ? `<button class="btn btn-sm btn-outline-info" onclick="showPhotoModal('${row.photoUrl}')">📷 查看照片</button>` : '<span class="text-muted small">無</span>'}</td>
         <td><span class="badge badge-${displayStatus} fs-6">${displayStatus}</span></td>
         <td><small class="fw-bold text-dark">${row.adminNote || '-'}</small></td>
       </tr>
@@ -505,7 +524,7 @@
         <td><strong>${row.reporterName}</strong><br><a href="tel:${row.reporterPhone}">${row.reporterPhone}</a></td>
         <td>${row.location}</td>
         <td><span class="badge bg-dark">${row.category}</span><br><small>${row.subDetail}</small></td>
-        <td>${hasPhoto ? `<a href="${row.photoUrl}" target="_blank" class="btn btn-sm btn-info text-white">查看</a>` : '無'}</td>
+        <td>${hasPhoto ? `<button class="btn btn-sm btn-info text-white" onclick="showPhotoModal('${row.photoUrl}')">查看照片</button>` : '無'}</td>
         <td>
           <select class="form-select form-select-sm mb-1 fw-bold" id="status_${row.caseId}" onchange="handleAdminStatusChange('${row.caseId}')">
             <option value="待處理" ${curStatus === '待處理' ? 'selected' : ''}>🔴 待處理</option>
@@ -535,6 +554,14 @@
         </td>
       </tr>
     `}).join('');
+  }
+
+  // 彈出預覽視窗顯示照片
+  function showPhotoModal(url) {
+    document.getElementById('modalPhotoElement').src = url;
+    document.getElementById('modalPhotoDownloadBtn').href = url;
+    const photoModal = new bootstrap.Modal(document.getElementById('photoModal'));
+    photoModal.show();
   }
 
   async function updateCaseStatus(caseId) {
@@ -625,7 +652,7 @@
         const str = String(val ?? '').replace(/"/g, '""');
         return `"${str}"`;
       });
-      csvRows.join(',');
+      csvRows.push(values.join(','));
     });
 
     const csvString = '\uFEFF' + csvRows.join('\r\n');

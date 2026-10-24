@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>大隱村線上通報與查詢系統</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
     body { background-color: #f4f7f6; font-family: 'Microsoft JhengHei', sans-serif; }
     .header-banner { background: linear-gradient(135deg, #1e5799 0%,#207cca 51%,#2989d8 100%); color: white; padding: 25px 0; margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
@@ -21,19 +20,6 @@
     
     #previewImg { max-height: 200px; border-radius: 8px; display: none; margin-top: 10px; }
     .sub-box { display: none; }
-
-    #exportCardContainer {
-      position: absolute;
-      left: -9999px;
-      top: 0;
-      width: 650px;
-      background: #ffffff;
-      padding: 30px;
-      font-family: 'Microsoft JhengHei', sans-serif;
-      color: #333;
-      border-radius: 12px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.1);
-    }
   </style>
 </head>
 <body>
@@ -66,7 +52,7 @@
           <div class="card p-4">
             <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
               <h4 class="fw-bold text-primary mb-0">填寫通報資料</h4>
-              <span class="badge bg-light text-secondary border">系統正常運作中 v2.8</span>
+              <span class="badge bg-light text-secondary border">系統正常運作中 v2.9</span>
             </div>
             
             <form id="reportForm">
@@ -196,7 +182,7 @@
         <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
           <div>
             <h4 class="fw-bold text-dark mb-0">🛠️ 案件管理後台（最新案件置頂）</h4>
-            <small class="text-muted">可更新狀態、匯出報表、下載單一案件圖片卡片或刪除案件</small>
+            <small class="text-muted">可更新狀態、匯出報表、檢視現場照片或刪除案件</small>
           </div>
           <div class="d-flex gap-2">
             <button class="btn btn-sm btn-success fw-bold" type="button" onclick="downloadAdminCSV()">📥 下載全部 Excel 報表</button>
@@ -213,7 +199,7 @@
                 <th>地點</th>
                 <th>分類與細項</th>
                 <th>照片</th>
-                <th width="330">狀態更新、回覆與管理</th>
+                <th width="300">狀態更新、回覆與管理</th>
               </tr>
             </thead>
             <tbody id="adminTableBody"></tbody>
@@ -224,85 +210,14 @@
   </div>
 </div>
 
-<!-- 隱藏的獨立案件通報卡片模板 -->
-<div id="exportCardContainer">
-  <div class="text-center border-bottom pb-3 mb-3">
-    <h3 class="fw-bold text-primary mb-1">🏞️ 大隱村災情與事件通報單</h3>
-    <p class="text-muted mb-0 small">大隱村辦公處・通報處理系統</p>
-  </div>
-  <table class="table table-bordered mb-3">
-    <tbody>
-      <tr>
-        <th class="table-light w-25">案件編號</th>
-        <td id="ex_caseId" class="fw-bold text-primary"></td>
-      </tr>
-      <tr>
-        <th class="table-light">通報時間</th>
-        <td id="ex_reportDate"></td>
-      </tr>
-      <tr>
-        <th class="table-light">發生地點</th>
-        <td id="ex_location" class="fw-bold"></td>
-      </tr>
-      <tr>
-        <th class="table-light">事件分類</th>
-        <td><span id="ex_category" class="badge bg-secondary"></span> <span id="ex_subDetail" class="text-dark"></span></td>
-      </tr>
-      <tr>
-        <th class="table-light">通報人資訊</th>
-        <td id="ex_reporter"></td>
-      </tr>
-      <tr>
-        <th class="table-light">處理狀態</th>
-        <td><span id="ex_status" class="badge"></span></td>
-      </tr>
-      <tr>
-        <th class="table-light">相關單位/備註</th>
-        <td id="ex_adminNote" class="text-danger fw-bold"></td>
-      </tr>
-    </tbody>
-  </table>
-  <div class="mb-2" id="ex_photoWrapper" style="display:none; text-align:center;">
-    <p class="fw-bold text-muted small mb-1">現場照片紀錄：</p>
-    <img id="ex_photoImg" src="" style="max-height:280px; max-width:100%; border-radius:6px; border:1px solid #ddd;" alt="現場照片">
-  </div>
-  <div class="text-end text-muted pt-2 border-top small">
-    <span>系統產生時間：<span id="ex_printTime"></span></span>
-  </div>
-</div>
-
-<!-- 圖片檢視視窗 (Modal) -->
-<div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content">
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title fw-bold">📱 案件通報單圖片已生成</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-content p-3 text-center bg-light">
-        <p class="text-danger fw-bold mb-2">💡 手機用戶請直接「長按圖片」選擇儲存至相簿；或點擊下方按鈕在新分頁開啟！</p>
-        <div style="max-height: 60vh; overflow: auto;" class="border bg-white p-2 rounded">
-          <img id="modalImageResult" class="img-fluid rounded shadow-sm" alt="通報單截圖">
-        </div>
-      </div>
-      <div class="modal-footer justify-content-between">
-        <button type="button" class="btn btn-outline-primary fw-bold" onclick="openImageInNewTab()">🌐 在新分頁開啟大圖</button>
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉視窗</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  // 已綁定您的最新 Google Apps Script 網址
   const GAS_URL = 'https://script.google.com/macros/s/AKfycbzRdfrnrNThvltGro3aARUi5oK6dGJMgtZKLOeGLrc6Swx3lNO9y-FT0bqEYOjuIU58Lg/exec';
 
   let compressedBase64 = '';
   let photoFileName = '';
   let currentAdminPwd = '';
   let adminRecordsCache = [];
-  let generatedImageUrl = '';
 
   document.addEventListener('DOMContentLoaded', function() {
     setNowDateTime();
@@ -380,7 +295,7 @@
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
 
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
         const preview = document.getElementById('previewImg');
         preview.src = dataUrl;
         preview.style.display = 'block';
@@ -615,83 +530,11 @@
 
           <div class="d-flex flex-wrap gap-1">
             <button class="btn btn-sm btn-success flex-grow-1 fw-bold" type="button" onclick="updateCaseStatus('${row.caseId}')">💾 儲存</button>
-            <button class="btn btn-sm btn-outline-primary" type="button" onclick="downloadCaseImage('${row.caseId}')" title="將此案件轉為圖片下載">🖼️ 下載圖片</button>
-            <button class="btn btn-sm btn-outline-danger" type="button" onclick="deleteCase('${row.caseId}')" title="刪除此筆案件">🗑️</button>
+            <button class="btn btn-sm btn-outline-danger" type="button" onclick="deleteCase('${row.caseId}')" title="刪除此筆案件">🗑️ 刪除</button>
           </div>
         </td>
       </tr>
     `}).join('');
-  }
-
-  function downloadCaseImage(caseId) {
-    const row = adminRecordsCache.find(r => r.caseId === caseId);
-    if (!row) {
-      alert('找不到該筆案件資料！');
-      return;
-    }
-
-    document.getElementById('ex_caseId').innerText = row.caseId;
-    document.getElementById('ex_reportDate').innerText = row.reportDate;
-    document.getElementById('ex_location').innerText = row.location;
-    document.getElementById('ex_category').innerText = row.category;
-    document.getElementById('ex_subDetail').innerText = ' / ' + row.subDetail;
-    document.getElementById('ex_reporter').innerText = `${row.reporterName} (${row.reporterPhone})`;
-    
-    const displayStatus = row.status === '已結案' ? '已完成' : row.status;
-    const statusBadge = document.getElementById('ex_status');
-    statusBadge.innerText = displayStatus;
-    statusBadge.className = 'badge ' + ('badge-' + displayStatus);
-
-    document.getElementById('ex_adminNote').innerText = row.adminNote || '尚無備註/處理中';
-
-    const photoWrapper = document.getElementById('ex_photoWrapper');
-    const photoImg = document.getElementById('ex_photoImg');
-    
-    if (row.photoUrl && row.photoUrl !== '無上傳照片') {
-      photoImg.src = row.photoUrl;
-      photoWrapper.style.display = 'block';
-    } else {
-      photoWrapper.style.display = 'none';
-    }
-
-    const now = new Date();
-    document.getElementById('ex_printTime').innerText = now.toLocaleString('zh-TW');
-
-    const exportContainer = document.getElementById('exportCardContainer');
-    exportContainer.style.left = '0';
-
-    setTimeout(() => {
-      html2canvas(exportContainer, { scale: 2, useCORS: true }).then(canvas => {
-        exportContainer.style.left = '-9999px';
-        
-        generatedImageUrl = canvas.toDataURL('image/png');
-        
-        const modalImg = document.getElementById('modalImageResult');
-        modalImg.src = generatedImageUrl;
-
-        const imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
-        imageModal.show();
-
-      }).catch(err => {
-        exportContainer.style.left = '-9999px';
-        alert('圖片生成失敗，請稍後再試。');
-      });
-    }, 500);
-  }
-
-  function openImageInNewTab() {
-    if (generatedImageUrl) {
-      const newTab = window.open();
-      newTab.document.write(`
-        <html>
-          <head><title>大隱村通報單圖片</title></head>
-          <body style="margin:0; background:#333; text-align:center;">
-            <p style="color:white; font-family:sans-serif; padding:10px; margin:0;">💡 請直接「長按圖片」選擇「加入相簿」或「儲存影像」即可！</p>
-            <img src="${generatedImageUrl}" style="max-width:100%; height:auto;" alt="通報單">
-          </body>
-        </html>
-      `);
-    }
   }
 
   async function updateCaseStatus(caseId) {
@@ -762,7 +605,7 @@
       return;
     }
 
-    const headers = ['案件編號', '通報時間', '通報人姓名', '聯絡電話', '發生地點', '事件分類', '事件細項/路燈編號', '照片資料', '處理狀態', '相關單位/處理備註'];
+    const headers = ['案件編號', '通報時間', '通報人姓名', '聯絡電話', '發生地點', '事件分類', '事件細項/路燈編號', '照片連結', '處理狀態', '相關單位/處理備註'];
     const csvRows = [headers.join(',')];
 
     adminRecordsCache.forEach(row => {
@@ -775,14 +618,14 @@
         row.location,
         row.category,
         row.subDetail,
-        row.photoUrl === '無上傳照片' ? '無' : '有照片',
+        row.photoUrl,
         displayStatus,
         row.adminNote || ''
       ].map(val => {
         const str = String(val ?? '').replace(/"/g, '""');
         return `"${str}"`;
       });
-      csvRows.push(values.join(','));
+      csvRows.join(',');
     });
 
     const csvString = '\uFEFF' + csvRows.join('\r\n');

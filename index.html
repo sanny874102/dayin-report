@@ -66,7 +66,7 @@
           <div class="card p-4">
             <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
               <h4 class="fw-bold text-primary mb-0">填寫通報資料</h4>
-              <span class="badge bg-light text-secondary border">系統正常運作中 v2.5</span>
+              <span class="badge bg-light text-secondary border">系統正常運作中 v2.6</span>
             </div>
             
             <form id="reportForm">
@@ -271,7 +271,7 @@
   </div>
 </div>
 
-<!-- 手機與電腦通用的圖片檢視視窗 (Modal) -->
+<!-- 圖片檢視視窗 (Modal) -->
 <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content">
@@ -280,7 +280,7 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-content p-3 text-center bg-light">
-        <p class="text-danger fw-bold mb-2">💡 手機用戶請直接「長按圖片」選擇「加入相簿」或「儲存影像」即可！</p>
+        <p class="text-danger fw-bold mb-2">💡 手機用戶請直接「長按圖片」選擇儲存至相簿；或點擊下方按鈕在新分頁開啟！</p>
         <div style="max-height: 60vh; overflow: auto;" class="border bg-white p-2 rounded">
           <img id="modalImageResult" class="img-fluid rounded shadow-sm" alt="通報單截圖">
         </div>
@@ -619,7 +619,7 @@
     `}).join('');
   }
 
-  // 將單一案件轉為圖片並支援圖片完整顯示與手機彈窗檢視
+  // 將單一案件轉為圖片（完美解決跨域與破圖問題）
   function downloadCaseImage(caseId) {
     const row = adminRecordsCache.find(r => r.caseId === caseId);
     if (!row) {
@@ -643,9 +643,11 @@
 
     const photoWrapper = document.getElementById('ex_photoWrapper');
     const photoImg = document.getElementById('ex_photoImg');
+    
     if (row.photoUrl && row.photoUrl !== '無上傳照片') {
-      // 透過代理伺服器繞過 Google Drive 跨域限制以正常顯示照片
-      photoImg.src = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(row.photoUrl);
+      // 改用更穩定的直連與圖片載入機制
+      photoImg.crossOrigin = "anonymous";
+      photoImg.src = row.photoUrl;
       photoWrapper.style.display = 'block';
     } else {
       photoWrapper.style.display = 'none';
@@ -657,6 +659,7 @@
     const exportContainer = document.getElementById('exportCardContainer');
     exportContainer.style.left = '0';
 
+    // 稍微延遲讓圖片載入完成後再截圖
     setTimeout(() => {
       html2canvas(exportContainer, { scale: 2, useCORS: true, allowTaint: true }).then(canvas => {
         exportContainer.style.left = '-9999px';
@@ -671,12 +674,11 @@
 
       }).catch(err => {
         exportContainer.style.left = '-9999px';
-        alert('圖片生成失敗，請稍後再試。');
+        alert('圖片生成失敗，可能是圖片格式或瀏覽器限制所致。');
       });
-    }, 600);
+    }, 800);
   }
 
-  // 在新分頁開啟圖片，解決手機無法直接下載的問題
   function openImageInNewTab() {
     if (generatedImageUrl) {
       const newTab = window.open();

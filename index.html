@@ -55,7 +55,7 @@
           <div class="card p-4">
             <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
               <h4 class="fw-bold text-primary mb-0">填寫通報資料</h4>
-              <span class="badge bg-light text-secondary border">系統正常運作中 v2.1</span>
+              <span class="badge bg-light text-secondary border">系統正常運作中 v2.2</span>
             </div>
             
             <form id="reportForm">
@@ -144,7 +144,7 @@
       <div class="card p-4">
         <div class="row align-items-center mb-3">
           <div class="col-md-6">
-            <h4 class="fw-bold text-primary mb-0">案件後續處理狀態</h4>
+            <h4 class="fw-bold text-primary mb-0">案件後續處理狀態 <span class="badge bg-info text-dark fs-6 ms-1">最新案件置頂</span></h4>
             <small class="text-muted">為保護村民隱私，公開查詢頁面已隱藏聯絡電話與部分姓名</small>
           </div>
           <div class="col-md-6 mt-2 mt-md-0">
@@ -193,9 +193,15 @@
 
       <!-- 管理後台列表 (登入後顯示) -->
       <div class="card p-4 d-none" id="adminDashboard">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h4 class="fw-bold text-dark mb-0">🛠️ 案件管理後台（含完整聯絡資訊）</h4>
-          <button class="btn btn-sm btn-outline-secondary" type="button" onclick="adminLogin()">🔄 重新載入</button>
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+          <div>
+            <h4 class="fw-bold text-dark mb-0">🛠️ 案件管理後台（最新案件置頂）</h4>
+            <small class="text-muted">可在此更新案件狀態、匯出 Excel 報表或刪除無效案件</small>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-success fw-bold" type="button" onclick="downloadAdminCSV()">📥 下載全部案件報表 (CSV)</button>
+            <button class="btn btn-sm btn-outline-secondary" type="button" onclick="adminLogin()">🔄 重新載入</button>
+          </div>
         </div>
         <div class="table-responsive">
           <table class="table table-bordered align-middle">
@@ -207,7 +213,7 @@
                 <th>地點</th>
                 <th>分類與細項</th>
                 <th>照片</th>
-                <th width="320">狀態更新與回覆</th>
+                <th width="330">狀態更新、回覆與管理</th>
               </tr>
             </thead>
             <tbody id="adminTableBody"></tbody>
@@ -226,6 +232,7 @@
   let compressedBase64 = '';
   let photoFileName = '';
   let currentAdminPwd = '';
+  let adminRecordsCache = []; // 儲存管理員載入的資料供下載報表使用
 
   // 當網頁載入完成時立刻綁定所有事件
   document.addEventListener('DOMContentLoaded', function() {
@@ -251,6 +258,19 @@
     document.getElementById('reportDate').value = now.toISOString().slice(0, 16);
   }
 
+  // 確保資料陣列依照案件編號與時間「由新到舊」排序（最新放最前面）
+  function sortRecordsNewestFirst(data) {
+    if (!Array.isArray(data)) return [];
+    return data.slice().sort(function(a, b) {
+      const idA = String(a.caseId || '');
+      const idB = String(b.caseId || '');
+      if (idA !== idB) {
+        return idB.localeCompare(idA); // 案件編號大的（最新）排前面
+      }
+      return String(b.reportDate || '').localeCompare(String(a.reportDate || ''));
+    });
+  }
+
   // 動態切換事件分類子選項
   function handleCategoryChange() {
     const cat = document.getElementById('category').value;
@@ -258,7 +278,6 @@
     const lightDiv = document.getElementById('subLightDiv');
     const otherDiv = document.getElementById('subOtherDiv');
 
-    // 先全部隱藏
     disasterDiv.style.display = 'none';
     lightDiv.style.display = 'none';
     otherDiv.style.display = 'none';
@@ -394,7 +413,8 @@
       const res = await fetch(GAS_URL);
       const result = await res.json();
       if (result.status === 'success') {
-        renderPublicTable(result.data);
+        const sortedData = sortRecordsNewestFirst(result.data);
+        renderPublicTable(sortedData);
       }
     } catch (err) {
       tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger py-4">無法載入資料，請檢查後端連線。</td></tr>';
@@ -409,7 +429,6 @@
     }
 
     tbody.innerHTML = data.map(row => {
-      // 相容舊資料的「已結案」顯示為「已完成」
       const displayStatus = row.status === '已結案' ? '已完成' : row.status;
       return `
       <tr>
@@ -454,7 +473,8 @@
       if (result.status === 'success') {
         document.getElementById('adminLoginBox').classList.add('d-none');
         document.getElementById('adminDashboard').classList.remove('d-none');
-        renderAdminTable(result.data);
+        adminRecordsCache = sortRecordsNewestFirst(result.data);
+        renderAdminTable(adminRecordsCache);
       } else {
         alert(result.message);
       }
@@ -499,12 +519,17 @@
 
   function renderAdminTable(data) {
     const tbody = document.getElementById('adminTableBody');
+    if (data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4">目前尚無任何通報案件</td></tr>';
+      return;
+    }
+
     tbody.innerHTML = data.map(row => {
       const curStatus = row.status === '已結案' ? '已完成' : row.status;
       const showQuickUnit = (curStatus === '已通報相關單位' || curStatus === '相關單位處理中') ? '' : 'd-none';
       return `
-      <tr>
-        <td class="fw-bold">${row.caseId}</td>
+      <tr id="adminRow_${row.caseId}">
+        <td class="fw-bold text-primary">${row.caseId}</td>
         <td><small>${row.reportDate}</small></td>
         <td><strong>${row.reporterName}</strong><br><a href="tel:${row.reporterPhone}">${row.reporterPhone}</a></td>
         <td>${row.location}</td>
@@ -533,7 +558,10 @@
             </div>
           </div>
 
-          <button class="btn btn-sm btn-success w-100 fw-bold" type="button" onclick="updateCaseStatus('${row.caseId}')">💾 儲存更新</button>
+          <div class="d-flex gap-1">
+            <button class="btn btn-sm btn-success flex-grow-1 fw-bold" type="button" onclick="updateCaseStatus('${row.caseId}')">💾 儲存更新</button>
+            <button class="btn btn-sm btn-outline-danger" type="button" onclick="deleteCase('${row.caseId}')" title="刪除此筆案件">🗑️ 刪除</button>
+          </div>
         </td>
       </tr>
     `}).join('');
@@ -544,7 +572,6 @@
     const newStatus = document.getElementById(`status_${caseId}`).value;
     const adminNote = document.getElementById(`note_${caseId}`).value.trim();
 
-    // 若選擇已通報相關單位或相關單位處理中，提醒管理員填寫單位名稱
     if ((newStatus === '已通報相關單位' || newStatus === '相關單位處理中') && !adminNote) {
       alert('💡 您選擇了「' + newStatus + '」，請在下方輸入框自填相關單位名稱！');
       document.getElementById(`note_${caseId}`).focus();
@@ -564,6 +591,12 @@
       });
       const result = await res.json();
       if (result.status === 'success') {
+        // 同步更新本地快取資料，方便直接匯出最新 CSV
+        const target = adminRecordsCache.find(r => r.caseId === caseId);
+        if (target) {
+          target.status = newStatus;
+          target.adminNote = adminNote;
+        }
         alert('✅ 案件【' + caseId + '】狀態已更新為：' + newStatus + (adminNote ? '\n內容：' + adminNote : ''));
       } else {
         alert('更新失敗：' + result.message);
@@ -571,6 +604,80 @@
     } catch (err) {
       alert('連線失敗');
     }
+  }
+
+  // 管理員刪除案件
+  async function deleteCase(caseId) {
+    if (!confirm('⚠️ 確定要永久刪除案件【 ' + caseId + ' 】嗎？\n刪除後將無法復原！')) {
+      return;
+    }
+
+    try {
+      const res = await fetch(GAS_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'deleteCase',
+          password: currentAdminPwd,
+          caseId: caseId
+        })
+      });
+      const result = await res.json();
+      if (result.status === 'success') {
+        alert('🗑️ 案件【' + caseId + '】已成功刪除！');
+        // 從畫面與快取中移除該筆資料
+        adminRecordsCache = adminRecordsCache.filter(r => r.caseId !== caseId);
+        renderAdminTable(adminRecordsCache);
+      } else {
+        alert('刪除失敗：' + result.message + '\n（請確認 Google Apps Script 已更新並重新部署新版本）');
+      }
+    } catch (err) {
+      alert('刪除連線失敗，請確認 Google Apps Script 是否已更新版本。');
+    }
+  }
+
+  // 管理員下載 CSV 報表 (支援 Excel 直接開啟不亂碼)
+  function downloadAdminCSV() {
+    if (!adminRecordsCache || adminRecordsCache.length === 0) {
+      alert('目前沒有可下載的案件資料！');
+      return;
+    }
+
+    const headers = ['案件編號', '通報時間', '通報人姓名', '聯絡電話', '發生地點', '事件分類', '事件細項/路燈編號', '照片連結', '處理狀態', '相關單位/處理備註'];
+    const csvRows = [headers.join(',')];
+
+    adminRecordsCache.forEach(row => {
+      const displayStatus = row.status === '已結案' ? '已完成' : row.status;
+      const values = [
+        row.caseId,
+        row.reportDate,
+        row.reporterName,
+        '="' + String(row.reporterPhone).replace(/^'/, '') + '"', // 讓 Excel 保留電話開頭的 0
+        row.location,
+        row.category,
+        row.subDetail,
+        row.photoUrl,
+        displayStatus,
+        row.adminNote || ''
+      ].map(val => {
+        const str = String(val ?? '').replace(/"/g, '""');
+        return `"${str}"`;
+      });
+      csvRows.push(values.join(','));
+    });
+
+    // 加入 \uFEFF (UTF-8 BOM) 確保 Excel 打開中文不亂碼
+    const csvString = '\uFEFF' + csvRows.join('\r\n');
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    link.href = url;
+    link.setAttribute('download', `大隱村通報案件報表_${today}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }
 </script>
 </body>
